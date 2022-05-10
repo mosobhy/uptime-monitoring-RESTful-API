@@ -3,20 +3,18 @@ const https = require("https")
 const { StringDecoder } = require("string_decoder")
 const url = require("url")
 const config = require('./config')
-
-
-// define the port
-const PORT = config.port
+const fs = require('fs')
+const path = require('path')
 
 
 // hander functions
 const handlers = {}
 
 // add the handler functions
-handlers.sample = (data, callback) => {
+handlers.ping = (data, callback) => {
     // accessing the request main data via data parameter
     // here
-    callback(200, {'data': "this is the payload"})
+    callback(200, { "data": "don't worry, I'm still alive ^_^" })
 }
 
 handlers.sample2 = (data, callback) => {
@@ -33,12 +31,28 @@ handlers.notFoundHandler = (data, callback) => {
 
 // define the route paths
 const router = {
-    'sample': handlers.sample,
+    'ping': handlers.ping,
     'sample2': handlers.sample2
 }
 
-// create ther server
-const server = http.createServer((req, res) => {
+
+// create the https server
+const httpsSecurityOptions = {
+    "key": fs.readFileSync(`${path.resolve()}/https/key.pem`),
+    "cert": fs.readFileSync(`${path.resolve()}/https/cert.pem`)
+}
+
+const httpsServer = https.createServer(httpsSecurityOptions, (req, res) => {
+    unifiedServer(req, res)
+})
+
+// create the http server
+const httpServer = http.createServer((req, res) => {
+    unifiedServer(req, res)
+})
+
+
+const unifiedServer = (req, res) => {
 
     // parse the url
     const req_url = url.parse(req.url, true)
@@ -94,10 +108,21 @@ const server = http.createServer((req, res) => {
             console.log('response: ', payload, statusCode)
         })
     })
-})
+} 
+
+
 
 // listening to the port
-server.listen(PORT, () => {
-    console.log('server is running at port ' + config.port + 'on http://localhost:'+ config.port + '/')
+
+// https server
+httpsServer.listen(config.httpsPort, () => {
+
+    console.log('https server is running at port ' + config.httpsPort + 'on https://localhost:' + config.httpsPort + '/')
+    console.log('environment mode: ' + config.envName)
+})
+
+httpServer.listen(config.httpPort, () => {
+
+    console.log('http server is running at port ' + config.httpPort + 'on http://localhost:' + config.httpPort + '/')
     console.log('environment mode: ' + config.envName)
 })
